@@ -14,7 +14,8 @@ csv_map_str = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 标签映射，字符
 label_column = '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）'  # 标签列
 text_column = '热搜词条'  # 文本内容列
 sample_size = 10  # 每个类别样本数量限制
-model_path = 'model/bert-base-chinese'  # BERT 模型路径
+# model_path = 'model/bert-base-chinese'  # BERT 模型本地路径
+model_path = 'bert-base-chinese'  # BERT 模型路径
 selection_method = "random"  # 数据选择方式，"random"、"top" 或 "bottom"
 label_map = eval(csv_map_str)  # 将标签映射字符串解析为字典
 
