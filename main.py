@@ -1,19 +1,17 @@
-# main.py
-import os
+import yaml
 import time
 from datetime import datetime
 import torch
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer, BertForSequenceClassification
-import torch.optim as optim
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import StepLR
 from src import config
 from src.dataset import load_and_process_data
 from src.train import train
 from src.evaluate import evaluate
 from src.visualization_utils import plot_loss_curve, plot_accuracy_curve, plot_lr_curve
-import json
-
+import os
 
 # 创建训练目录
 def create_training_directories():
@@ -161,35 +159,140 @@ def save_model_and_visualizations(model, models_dir, visualizations_dir, train_l
     plot_lr_curve(learning_rates, save_path=os.path.join(visualizations_dir, "lr_curve.png"))
 
 
-def main():
-    # 初始化训练目录
-    models_dir, visualizations_dir, current_training_dir = create_training_directories()
+# 保存训练参数的函数
+def save_training_params_yaml(config_module, current_training_dir):
+    """
+    提取并保存训练参数为 YAML 格式。
 
-    # 加载数据集和模型
+    Parameters:
+    - config_module: 包含配置的模块对象
+    - current_training_dir: 当前训练目录，用于保存训练参数
+    """
+    # 提取配置模块中的可序列化部分
+    config_dict = {
+        key: value
+        for key, value in vars(config_module).items()
+        if not key.startswith("__") and not callable(value)
+    }
+
+    # 保存为 YAML 文件
+    params_file = os.path.join(current_training_dir, "training_params.yaml")
+    with open(params_file, 'w', encoding='utf-8') as f:
+        yaml.dump(config_dict, f, allow_unicode=True, sort_keys=False)
+
+    print(f"训练参数已保存至 {params_file}！")
+
+def load_config_from_yaml(config_path):
+    """
+    从 YAML 文件加载配置，并返回配置对象。
+
+    Parameters:
+    - config_path (str): 配置文件路径
+
+    Returns:
+    - config (object): 包含配置内容的对象
+    """
+    # 读取 YAML 文件内容
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config_dict = yaml.safe_load(f)
+
+    # 创建动态配置对象
+    class Config:
+        pass
+
+    config = Config()
+    for key, value in config_dict.items():
+        setattr(config, key, value)  # 动态添加配置项
+    return config
+
+
+def initialize_training_directories(base_dir="./artifacts"):
+    """
+    初始化训练目录，用于保存模型、可视化图表等。
+
+    Parameters:
+    - base_dir (str): 基础目录路径
+
+    Returns:
+    - models_dir (str): 模型保存目录
+    - visualizations_dir (str): 可视化图表保存目录
+    - current_training_dir (str): 当前训练会话目录
+    """
+    from datetime import datetime
+
+    # 生成当前时间戳的训练会话目录
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    current_training_dir = os.path.join(base_dir, timestamp)
+
+    # 定义子目录路径
+    models_dir = os.path.join(current_training_dir, "models")
+    visualizations_dir = os.path.join(current_training_dir, "visualizations")
+
+    # 创建目录
+    os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(visualizations_dir, exist_ok=True)
+
+    return models_dir, visualizations_dir, current_training_dir
+
+
+def main(config):
+    """
+    主函数，包含模型训练和评估的完整流程。
+
+    Parameters:
+    - config (object): 配置对象
+    """
+    # Step 1: 初始化训练目录
+    models_dir, visualizations_dir, current_training_dir = initialize_training_directories()
+
+    # Step 2: 加载数据集和模型（函数需自行实现）
     train_dataset, test_dataset, model, label_map = load_data_and_model()
 
-    # 配置训练设备
+    # Step 3: 保存训练参数到 YAML 文件
+    save_training_params_yaml(config, current_training_dir)
+
+    # Step 4: 配置设备（CPU 或 GPU）
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
-    # 定义数据加载器
+    # Step 5: 定义数据加载器
     train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE)
 
-    # 定义优化器和学习率调度器
-    optimizer = optim.AdamW(model.parameters(), lr=config.LEARNING_RATE)
-    scheduler = StepLR(optimizer, step_size=1, gamma=0.9)
+    # Step 6: 定义优化器和学习率调度器
+    optimizer = AdamW(model.parameters(), lr=config.LEARNING_RATE)
+    scheduler = StepLR(optimizer, step_size=config.SCHEDULER_STEP_SIZE, gamma=config.SCHEDULER_GAMMA)
 
-    # 开始训练和评估
+    # Step 7: 训练和评估模型（需自行实现训练逻辑）
     train_losses, val_losses, train_accuracies, val_accuracies, learning_rates = train_and_evaluate(
-        model, train_loader, test_loader, optimizer, scheduler, device, models_dir, visualizations_dir, label_map
+        model=model,
+        train_loader=train_loader,
+        test_loader=test_loader,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        device=device,
+        models_dir=models_dir,
+        visualizations_dir=visualizations_dir,
+        label_map=label_map
     )
 
-    # 保存模型和可视化图表
+    # Step 8: 保存最终模型和可视化图表
     save_model_and_visualizations(
-        model, models_dir, visualizations_dir, train_losses, val_losses, train_accuracies, val_accuracies, learning_rates
+        model=model,
+        models_dir=models_dir,
+        visualizations_dir=visualizations_dir,
+        train_losses=train_losses,
+        val_losses=val_losses,
+        train_accuracies=train_accuracies,
+        val_accuracies=val_accuracies,
+        learning_rates=learning_rates
     )
 
 
 if __name__ == '__main__':
-    main()
+    # 加载配置
+    # config_path = "./artifacts/20241115_210510/training_params.yaml"
+    # config = load_config_from_yaml(config_path)
+
+    # 启动主函数
+    main(config)
