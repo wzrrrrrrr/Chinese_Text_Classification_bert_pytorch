@@ -7,7 +7,8 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from src.dataset import load_and_process_data
 from src.train import train
 from src.evaluate import evaluate
-from src.visualization_utils import plot_loss_curve, plot_accuracy_curve, plot_confusion_matrix  # 导入可视化函数
+from src.visualization_utils import plot_loss_curve, plot_accuracy_curve, plot_confusion_matrix, \
+    plot_lr_curve  # 导入可视化函数
 
 # 配置文件路径和映射字典
 data_path = 'data/weibo-hot-search-labeled.csv'  # 数据集路径
@@ -15,7 +16,7 @@ csv_map_str = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 标签映射，字符
 # csv_map_str = None  # 标签映射，字符串格式
 label_column = '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）'  # 标签列
 text_column = '热搜词条'  # 文本内容列
-sample_size = 20  # 每个类别样本数量限制
+sample_size = 30  # 每个类别样本数量限制
 # sample_size = None  # 每个类别样本数量限制
 # model_path = 'model/bert-base-chinese'  # BERT 模型本地路径
 model_path = 'bert-base-chinese'  # BERT 模型路径
@@ -63,6 +64,7 @@ scheduler = StepLR(optimizer, step_size=1, gamma=0.9)  # 每个 epoch 后将学�
 best_val_loss = float('inf')  # 设置验证损失的初始最优值
 epochs_without_improvement = 0  # 连续无改进 epoch 计数器
 
+
 # 全局变量,用于记录每个epoch的损失
 train_losses = []
 val_losses = []
@@ -72,13 +74,17 @@ val_accuracies = []
 # 控制是否每个epoch绘制混淆矩阵
 draw_confusion_matrix = False
 
+# 全局变量，用于记录每个 epoch 的学习率
+learning_rates = []
+
+
 # 开始训练和验证循环
 for epoch in range(num_epochs):
     # 训练阶段
     start_time = time.time()
     time.sleep(1)
     train_loss, train_accuracy = train(model, train_loader, optimizer, device)
-    train_losses.append(train_loss) #绘制损失曲线
+    train_losses.append(train_loss)  # 绘制损失曲线
     train_accuracies.append(train_accuracy)  # 绘制准确率曲线
 
     print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {train_loss:.4f}, Training Accuracy: {train_accuracy:.4f}")
@@ -86,9 +92,12 @@ for epoch in range(num_epochs):
     # 验证阶段
     time.sleep(1)
     test_loss, test_accuracy = evaluate(model, test_loader, device, label_map, draw_confusion_matrix=draw_confusion_matrix)
-    val_losses.append(test_loss)    #绘制损失曲线
+    val_losses.append(test_loss)  # 绘制损失曲线
     val_accuracies.append(test_accuracy)  # 绘制准确率曲线
     print(f"Epoch {epoch + 1}/{num_epochs}, Validation Loss: {test_loss:.4f}, Validation Accuracy: {test_accuracy:.4f}")
+
+    # 记录当前学习率
+    learning_rates.append(optimizer.param_groups[0]['lr'])
 
     # 学习率调整
     scheduler.step()
@@ -119,6 +128,7 @@ for epoch in range(num_epochs):
 
 # 保存最终模型
 torch.save(model.state_dict(), bert_text_classification_final)
-plot_loss_curve(train_losses, val_losses) #绘制损失曲线
-plot_accuracy_curve(train_accuracies, val_accuracies) #绘制准确率曲线
+plot_loss_curve(train_losses, val_losses)  # 绘制损失曲线
+plot_accuracy_curve(train_accuracies, val_accuracies)  # 绘制准确率曲线
+plot_lr_curve(learning_rates)  # 绘制学习率曲线
 print("最终模型已保存！")

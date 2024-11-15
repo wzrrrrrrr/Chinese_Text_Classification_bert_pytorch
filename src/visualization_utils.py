@@ -131,3 +131,19 @@ def plot_confusion_matrix(model, data_loader, class_names_map, device='cpu', epo
 
     # 显示混淆矩阵
     plt.show()
+
+def plot_lr_curve(lr_list):
+    """
+    绘制学习率曲线。
+
+    Args:
+        lr_list (list): 每个 epoch 结束时的学习率列表。
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, len(lr_list) + 1), lr_list, label='Learning Rate')
+    plt.xlabel('Epoch')
+    plt.ylabel('Learning Rate')
+    plt.title('Learning Rate Scheduler Curve')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
