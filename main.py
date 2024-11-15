@@ -8,7 +8,7 @@ from src.dataset import load_and_process_data
 from src.train import train
 from src.evaluate import evaluate
 from src.visualization_utils import plot_loss_curve, plot_accuracy_curve, plot_confusion_matrix, \
-    plot_lr_curve  # 导入可视化函数
+    plot_lr_curve, plot_classification_report  # 导入可视化函数
 
 # 配置文件路径和映射字典
 data_path = 'data/weibo-hot-search-labeled.csv'  # 数据集路径
@@ -71,12 +71,13 @@ val_losses = []
 # 全局变量，用于记录每个 epoch 的准确率
 train_accuracies = []
 val_accuracies = []
-# 控制是否每个epoch绘制混淆矩阵
-draw_confusion_matrix = False
-
 # 全局变量，用于记录每个 epoch 的学习率
 learning_rates = []
 
+# 控制是否每个epoch绘制混淆矩阵
+draw_confusion_matrix = False
+# 控制是否每个epoch输出分类报告
+draw_classification_report = False
 
 # 开始训练和验证循环
 for epoch in range(num_epochs):
@@ -91,7 +92,7 @@ for epoch in range(num_epochs):
 
     # 验证阶段
     time.sleep(1)
-    test_loss, test_accuracy = evaluate(model, test_loader, device, label_map, draw_confusion_matrix=draw_confusion_matrix)
+    test_loss, test_accuracy = evaluate(model, test_loader, device, label_map, epoch= epoch + 1, draw_confusion_matrix=draw_confusion_matrix, draw_classification_report = draw_classification_report)
     val_losses.append(test_loss)  # 绘制损失曲线
     val_accuracies.append(test_accuracy)  # 绘制准确率曲线
     print(f"Epoch {epoch + 1}/{num_epochs}, Validation Loss: {test_loss:.4f}, Validation Accuracy: {test_accuracy:.4f}")
@@ -111,7 +112,8 @@ for epoch in range(num_epochs):
 
         # 绘制混淆矩阵，显示当前 epoch 和模型名称
         plot_confusion_matrix(model, test_loader, class_names_map=label_map, device=device, epoch=epoch + 1, model_name=bert_text_classification_best)
-
+        # 绘制分类报告，包含当前 epoch 和模型名称
+        plot_classification_report(model, test_loader, class_names_map=label_map, device=device, epoch=epoch + 1,model_name=bert_text_classification_best)
     else:
         epochs_without_improvement += 1
         print(f"验证损失无改进，已连续 {epochs_without_improvement} 个 epoch 无改善")

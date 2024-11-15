@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.font_manager as fm
 import torch
 
@@ -58,7 +59,7 @@ def plot_accuracy_curve(train_accuracies, val_accuracies):
     plt.show()
 
 
-def plot_confusion_matrix(true_labels, pred_labels, class_names):
+def plot_confusion_matrix_epoch(true_labels, pred_labels, class_names, epoch=None):
     """
     绘制混淆矩阵图，用于显示模型的分类性能。
 
@@ -76,7 +77,7 @@ def plot_confusion_matrix(true_labels, pred_labels, class_names):
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names)
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
-    plt.title("Confusion Matrix")
+    plt.title(f"Confusion Matrix (Epoch {epoch})" if epoch is not None else "Confusion Matrix")
     plt.show()
 
 
@@ -146,4 +147,90 @@ def plot_lr_curve(lr_list):
     plt.title('Learning Rate Scheduler Curve')
     plt.legend()
     plt.grid(True)
+    plt.show()
+
+def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, figsize=(10, 6)):
+    """
+    绘制分类报告的热力图，并显示当前的 epoch。
+
+    Args:
+        y_true (list or array): 真实标签。
+        y_pred (list or array): 预测标签。
+        class_names (list): 类别名称列表。
+        epoch (int, optional): 当前的训练 epoch，用于显示在图表标题中。
+        figsize (tuple): 图表尺寸。
+    """
+    # 生成分类报告并转换为 DataFrame
+    report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
+    report_df = pd.DataFrame(report).iloc[:-1, :].T
+
+    # 动态生成标题
+    title = f"Classification Report (Epoch {epoch})" if epoch is not None else "Classification Report"
+
+    # 绘制热力图
+    plt.figure(figsize=figsize)
+    sns.heatmap(report_df, annot=True, cmap="Blues", fmt=".2f", cbar=False)
+    plt.title(title)
+    plt.xlabel("Metrics")
+    plt.ylabel("Classes")
+    plt.yticks(rotation=0)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_classification_report(model, data_loader, class_names_map, device, epoch=None, model_name=None):
+    """
+    绘制分类报告的可视化图，显示每个类的精确度、召回率和 F1 分数，并在标题中包含 epoch 和模型名称。
+
+    Args:
+        model (torch.nn.Module): 待评估的模型。
+        data_loader (DataLoader): 测试数据集的 DataLoader。
+        class_names_map (dict): 标签映射字典，例如 {0: '科技', 1: '娱乐', 2: '时事'}。
+        device (torch.device): 模型和数据的运行设备（CPU 或 GPU）。
+        epoch (int, optional): 当前的 epoch，用于图像标题显示。
+        model_name (str, optional): 模型名称，用于图像标题显示。
+    """
+    # 设置模型为评估模式
+    model.eval()
+
+    all_preds = []
+    all_labels = []
+
+    # 禁用梯度计算
+    with torch.no_grad():
+        for batch in data_loader:
+            # 将数据移至指定设备
+            input_ids = batch['input_ids'].to(device)
+            attention_mask = batch['attention_mask'].to(device)
+            labels = batch['labels'].to(device)
+
+            # 获取模型预测
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            _, preds = torch.max(outputs.logits, dim=1)
+
+            # 收集所有预测和真实标签
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    # 生成分类报告
+    report = classification_report(all_labels, all_preds, target_names=list(class_names_map.values()), output_dict=True)
+
+    # 将报告转换为 DataFrame 格式
+    report_df = pd.DataFrame(report).transpose()
+
+    # 设置图像大小
+    plt.figure(figsize=(10, 6))
+
+    # 绘制热力图，显示各项指标
+    sns.heatmap(report_df.iloc[:-1, :-1], annot=True, cmap="Blues", fmt=".2f", cbar=False)
+
+    # 设置标题，包含 epoch 和模型名称
+    title = f"Classification Report (Epoch {epoch}) - Model: {model_name}" if epoch is not None and model_name else "Classification Report"
+    plt.title(title)
+    plt.xlabel("Metrics")
+    plt.ylabel("Classes")
+
+    # 显示图像
+    plt.tight_layout()
     plt.show()
