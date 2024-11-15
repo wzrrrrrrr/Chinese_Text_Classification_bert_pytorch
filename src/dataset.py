@@ -35,7 +35,7 @@ class TextDataset(Dataset):
 
 
 def load_and_process_data(data_path, tokenizer, label_column, text_column,
-                          label_map=None, sample_size=None, test_size=0.2, selection_method="random"):
+                          csv_map_str=None, sample_size=None, test_size=0.2, selection_method="random"):
     """
     读取数据文件并处理标签和文本数据，将其分为训练集和测试集。
 
@@ -44,37 +44,36 @@ def load_and_process_data(data_path, tokenizer, label_column, text_column,
         tokenizer (BertTokenizer): 用于文本编码的分词器。
         label_column (str): 标签所在的列名。
         text_column (str): 文本所在的列名。
-        label_map (dict, optional): 自定义标签映射，将标签名称映射到整数值。
+        csv_map_str (str, optional): 标签映射的字符串表示形式，将标签名称映射到整数值。
         sample_size (int, optional): 每个标签类保留的样本数量。
         test_size (float): 测试集所占的比例，默认为0.2。
         selection_method (str): 选择数据的方式，可选值为 "random"、"top"、"bottom"。
 
     Returns:
-        train_dataset (TextDataset): 处理后的训练集。
-        test_dataset (TextDataset): 处理后的测试集。
-        num_labels (int): 标签类别总数。
+        tuple: 包含训练集 (TextDataset)，测试集 (TextDataset)，以及标签映射 (dict)。
     """
-    # 读取数据文件
+    # Step 1: 读取数据文件
     df = pd.read_csv(data_path)
 
-    # 如果提供了 label_map，则对标签进行筛选和编码
-    if label_map:
-        # 只保留标签在 label_map 中的行
-        df = df[df[label_column].isin(label_map.values())]
+    # Step 2: 如果提供了 csv_map_str，解析为字典并应用自定义标签映射
+    if csv_map_str:
+        label_map = eval(csv_map_str)  # 将字符串转换为字典格式
+        df = df[df[label_column].isin(label_map.values())].copy()  # 仅保留映射中存在的标签，并生成新副本
 
-        # 将标签映射为指定的整数
+        # 将标签从文本值映射为整数值
         df[label_column] = df[label_column].map({v: k for k, v in label_map.items()})
-        labels = df[label_column].astype(int).tolist()
+        labels = df[label_column].astype(int).tolist()  # 转换为整数列表
 
-        # 打印标签映射关系
+        # 打印映射关系
         print("标签与文本标签的自定义映射关系：")
         for idx, label in label_map.items():
             print(f"{idx} -> {label}")
+
+    # Step 3: 若未提供 csv_map_str，自动生成整数标签
     else:
-        # 如果未提供 label_map，则自动生成整数标签
-        labels = df[label_column].astype(str).tolist()
-        label_encoder = LabelEncoder()
-        labels = label_encoder.fit_transform(labels)
+        labels = df[label_column].astype(str).tolist()  # 转换标签为字符串
+        label_encoder = LabelEncoder()  # 初始化标签编码器
+        labels = label_encoder.fit_transform(labels)  # 自动编码标签
 
         # 打印自动生成的标签映射关系
         print("标签与文本标签的自动映射关系：")
@@ -84,12 +83,16 @@ def load_and_process_data(data_path, tokenizer, label_column, text_column,
         # 更新 label_map 为自动生成的映射字典
         label_map = {idx: label for idx, label in enumerate(label_encoder.classes_)}
 
-    # 只保留每类前 sample_size 条数据，根据选择方式选择数据
+    # Step 4: 根据 sample_size 和 selection_method 筛选每类样本
     if sample_size:
-        df['Encoded_Labels'] = labels  # 创建中间列以便分组
+        # 创建一个中间列 'Encoded_Labels' 以便分组
+        df = df.copy()
+        df.loc[:, 'Encoded_Labels'] = labels
 
+        # 根据 selection_method 选择数据
         if selection_method == "random":
-            df = df.groupby('Encoded_Labels').apply(lambda x: x.sample(n=sample_size, random_state=42)).reset_index(drop=True)
+            df = df.groupby('Encoded_Labels').apply(lambda x: x.sample(n=sample_size, random_state=42)).reset_index(
+                drop=True)
         elif selection_method == "top":
             df = df.groupby('Encoded_Labels').head(sample_size).reset_index(drop=True)
         elif selection_method == "bottom":
@@ -99,17 +102,17 @@ def load_and_process_data(data_path, tokenizer, label_column, text_column,
 
         labels = df['Encoded_Labels'].tolist()  # 更新 labels 列
 
-    # 提取文本列
-    texts = df[text_column].astype(str).tolist()
+    # Step 5: 提取文本列和分割数据集
+    texts = df[text_column].astype(str).tolist()  # 将文本列转换为字符串列表
 
-    # 将数据集划分为训练集和测试集
+    # 将数据集分为训练集和测试集
     train_texts, test_texts, train_labels, test_labels = train_test_split(
         texts, labels, test_size=test_size, random_state=42
     )
 
-    # 创建训练集和测试集对象
+    # Step 6: 创建训练集和测试集对象
     train_dataset = TextDataset(train_texts, train_labels, tokenizer=tokenizer)
     test_dataset = TextDataset(test_texts, test_labels, tokenizer=tokenizer)
 
-    # 返回训练集、测试集以及标签类别总数
-    return train_dataset, test_dataset, len(label_map)
+    # 返回训练集、测试集以及标签映射
+    return train_dataset, test_dataset, label_map
