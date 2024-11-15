@@ -1,9 +1,11 @@
 from tqdm import tqdm
 import torch
 from src.visualization_utils import  plot_classification_report_epoch, plot_confusion_matrix_epoch
+from src.config import EVALUATION_CONFIG  # 导入配置
 
 
-def evaluate(model, test_loader, device, label_map, epoch=None, draw_confusion_matrix=False, draw_classification_report=False):
+
+def evaluate(model, test_loader, device, label_map, epoch=None):
     """
     评估模型在测试集上的表现，返回平均损失和准确率，并根据需要绘制混淆矩阵和分类报告。
 
@@ -13,8 +15,8 @@ def evaluate(model, test_loader, device, label_map, epoch=None, draw_confusion_m
         device (torch.device): 模型和数据的运行设备（CPU 或 GPU）。
         label_map (dict): 标签映射的字典，例如 {0: '科技', 1: '娱乐', 2: '时事'}。
         epoch (int, optional): 当前的训练 epoch。
-        draw_confusion_matrix (bool): 是否绘制混淆矩阵，默认为 False。
-        draw_classification_report (bool): 是否绘制分类报告，默认为 False。
+        EVALUATION_CONFIG.draw_confusion_matrix (bool): 是否绘制混淆矩阵，默认为 False。
+        EVALUATION_CONFIG.draw_classification_report (bool): 是否绘制分类报告，默认为 False。
 
     Returns:
         tuple: (平均损失 (float), 准确率 (float))
@@ -49,12 +51,12 @@ def evaluate(model, test_loader, device, label_map, epoch=None, draw_confusion_m
     accuracy = correct_predictions / total_samples
 
     # 绘制混淆矩阵
-    if draw_confusion_matrix:
+    if EVALUATION_CONFIG.get('draw_confusion_matrix'):
         class_names = [label_map[i] for i in range(len(label_map))]
         plot_confusion_matrix_epoch(all_labels, all_preds, class_names, epoch=epoch)
 
     # 绘制分类报告并显示当前 epoch
-    if draw_classification_report:
+    if EVALUATION_CONFIG.get('draw_classification_report'):
         class_names = [label_map[i] for i in range(len(label_map))]
         plot_classification_report_epoch(all_labels, all_preds, class_names, epoch=epoch)
 
