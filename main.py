@@ -10,6 +10,9 @@ from src.evaluate import evaluate
 from src.visualization_utils import plot_loss_curve, plot_accuracy_curve, plot_confusion_matrix, \
     plot_lr_curve, plot_classification_report  # 导入可视化函数
 
+# 在main.py的最开头，记录总的开始时间
+total_start_time = time.time()
+
 # 配置文件路径和映射字典
 data_path = 'data/weibo-hot-search-labeled.csv'  # 数据集路径
 csv_map_str = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 标签映射，字符串格式
@@ -127,6 +130,12 @@ for epoch in range(num_epochs):
     end_time = time.time()
     print(f"Epoch {epoch + 1} completed in {end_time - start_time:.2f} seconds.")
     print("=" * 90)
+
+
+# 在训练结束时记录总耗时
+total_end_time = time.time()
+total_time = total_end_time - total_start_time
+print(f"Total training time: {total_time:.2f} seconds.")
 
 # 保存最终模型
 torch.save(model.state_dict(), bert_text_classification_final)
