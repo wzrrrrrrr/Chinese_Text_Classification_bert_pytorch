@@ -95,15 +95,15 @@ def train_and_evaluate(model, train_loader, test_loader, optimizer, scheduler, d
         start_time = time.time()
 
         # 训练阶段
+        time.sleep(1)
         train_loss, train_accuracy = train(model, train_loader, optimizer, device)
         train_losses.append(train_loss)
         train_accuracies.append(train_accuracy)
         print(f"Epoch {epoch + 1}/{config.NUM_EPOCHS}, Training Loss: {train_loss:.4f}, Training Accuracy: {train_accuracy:.4f}")
 
         # 验证阶段
-        val_loss, val_accuracy = evaluate(
-            model, test_loader, device, label_map, epoch=epoch + 1
-        )
+        time.sleep(1)
+        val_loss, val_accuracy = evaluate(model, test_loader, device, label_map, epoch=epoch + 1, visualizations_dir = visualizations_dir)
         val_losses.append(val_loss)
         val_accuracies.append(val_accuracy)
         print(f"Epoch {epoch + 1}/{config.NUM_EPOCHS}, Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.4f}")

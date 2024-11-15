@@ -1,11 +1,12 @@
+import os
+
 from tqdm import tqdm
 import torch
 from src.visualization_utils import  plot_classification_report_epoch, plot_confusion_matrix_epoch
 from src.config import EVALUATION_CONFIG  # 导入配置
 
 
-
-def evaluate(model, test_loader, device, label_map, epoch=None):
+def evaluate(model, test_loader, device, label_map, epoch=None, visualizations_dir=None):
     """
     评估模型在测试集上的表现，返回平均损失和准确率，并根据需要绘制混淆矩阵和分类报告。
 
@@ -15,8 +16,7 @@ def evaluate(model, test_loader, device, label_map, epoch=None):
         device (torch.device): 模型和数据的运行设备（CPU 或 GPU）。
         label_map (dict): 标签映射的字典，例如 {0: '科技', 1: '娱乐', 2: '时事'}。
         epoch (int, optional): 当前的训练 epoch。
-        EVALUATION_CONFIG.draw_confusion_matrix (bool): 是否绘制混淆矩阵，默认为 False。
-        EVALUATION_CONFIG.draw_classification_report (bool): 是否绘制分类报告，默认为 False。
+        visualizations_dir (str, optional): 存储图表的目录路径。
 
     Returns:
         tuple: (平均损失 (float), 准确率 (float))
@@ -50,14 +50,24 @@ def evaluate(model, test_loader, device, label_map, epoch=None):
     avg_loss = total_loss / total_samples
     accuracy = correct_predictions / total_samples
 
-    # 绘制混淆矩阵
-    if EVALUATION_CONFIG.get('draw_confusion_matrix'):
-        class_names = [label_map[i] for i in range(len(label_map))]
-        plot_confusion_matrix_epoch(all_labels, all_preds, class_names, epoch=epoch)
+    # 创建文件夹存储混淆矩阵和分类报告图表
+    if visualizations_dir:
+        confusion_matrix_dir = os.path.join(visualizations_dir, 'confusion_matrix')
+        classification_report_dir = os.path.join(visualizations_dir, 'classification_report')
 
-    # 绘制分类报告并显示当前 epoch
-    if EVALUATION_CONFIG.get('draw_classification_report'):
-        class_names = [label_map[i] for i in range(len(label_map))]
-        plot_classification_report_epoch(all_labels, all_preds, class_names, epoch=epoch)
+        os.makedirs(confusion_matrix_dir, exist_ok=True)
+        os.makedirs(classification_report_dir, exist_ok=True)
+
+        # 绘制混淆矩阵并保存
+        if EVALUATION_CONFIG.get('draw_confusion_matrix'):
+            class_names = [label_map[i] for i in range(len(label_map))]
+            plot_confusion_matrix_epoch(all_labels, all_preds, class_names, epoch=epoch,
+                                        visualizations_dir=confusion_matrix_dir)
+
+        # 绘制分类报告并保存
+        if EVALUATION_CONFIG.get('draw_classification_report'):
+            class_names = [label_map[i] for i in range(len(label_map))]
+            plot_classification_report_epoch(all_labels, all_preds, class_names, epoch=epoch,
+                                             visualizations_dir=classification_report_dir)
 
     return avg_loss, accuracy

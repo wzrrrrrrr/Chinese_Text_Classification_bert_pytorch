@@ -4,6 +4,8 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.font_manager as fm
 import torch
+import os
+
 
 # 加载支持中文的字体，例如SimHei
 font_path = '/System/Library/Fonts/STHeiti Light.ttc'  # 替换为你的字体路径
@@ -77,15 +79,16 @@ def plot_accuracy_curve(train_accuracies, val_accuracies, save_path=None):
     plt.show()
 
 
-def plot_confusion_matrix_epoch(true_labels, pred_labels, class_names, epoch=None):
+def plot_confusion_matrix_epoch(true_labels, pred_labels, class_names, epoch=None, visualizations_dir=None):
     """
-    绘制混淆矩阵图，用于显示模型的分类性能。
+    绘制混淆矩阵图，并保存到指定目录。
 
     参数：
     - true_labels (list or array): 验证集的真实标签
     - pred_labels (list or array): 模型的预测标签
     - class_names (list of str): 类别名称列表，用于标签矩阵
-
+    - epoch (int, optional): 当前的训练 epoch，用于保存文件名。
+    - visualizations_dir (str, optional): 存储图表的目录路径
     """
     # 生成混淆矩阵
     cm = confusion_matrix(true_labels, pred_labels)
@@ -96,8 +99,12 @@ def plot_confusion_matrix_epoch(true_labels, pred_labels, class_names, epoch=Non
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
     plt.title(f"Confusion Matrix (Epoch {epoch})" if epoch is not None else "Confusion Matrix")
-    plt.show()
 
+    # 保存图表
+    if visualizations_dir:
+        filename = f"confusion_matrix_epoch_{epoch}.png" if epoch is not None else "confusion_matrix.png"
+        plt.savefig(os.path.join(visualizations_dir, filename))
+    plt.close()
 
 def plot_confusion_matrix(model, data_loader, class_names_map, device='cpu', epoch=None, model_name="Model"):
     """
@@ -175,9 +182,9 @@ def plot_lr_curve(lr_list, save_path=None):
     # 显示图形
     plt.show()
 
-def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, figsize=(10, 6)):
+def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, figsize=(10, 6), visualizations_dir=None):
     """
-    绘制分类报告的热力图，并显示当前的 epoch。
+    绘制分类报告的热力图，并保存到指定目录。
 
     Args:
         y_true (list or array): 真实标签。
@@ -185,6 +192,7 @@ def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, fi
         class_names (list): 类别名称列表。
         epoch (int, optional): 当前的训练 epoch，用于显示在图表标题中。
         figsize (tuple): 图表尺寸。
+        visualizations_dir (str, optional): 存储图表的目录路径
     """
     # 生成分类报告并转换为 DataFrame
     report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
@@ -202,7 +210,12 @@ def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, fi
     plt.yticks(rotation=0)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.show()
+
+    # 保存图表
+    if visualizations_dir:
+        filename = f"classification_report_epoch_{epoch}.png" if epoch is not None else "classification_report.png"
+        plt.savefig(os.path.join(visualizations_dir, filename))
+    plt.close()
 
 
 def plot_classification_report(model, data_loader, class_names_map, device, epoch=None, model_name=None):
