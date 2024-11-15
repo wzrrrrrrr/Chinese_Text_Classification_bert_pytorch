@@ -1,5 +1,6 @@
 # 数据集配置
 DATA_PATH = 'data/weibo-hot-search-labeled.csv'
+TEST_DATA_PATH = 'data/test_data.csv'  # 新增测试数据集路径
 LABEL_COLUMN = '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）'
 TEXT_COLUMN = '热搜词条'
 SAMPLE_SIZE = 30

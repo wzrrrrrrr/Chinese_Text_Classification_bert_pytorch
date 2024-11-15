@@ -1,85 +1,168 @@
+import os
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
 from torch.utils.data import DataLoader
-
+from transformers import BertTokenizer, BertForSequenceClassification
+from tqdm import tqdm
+from src import config
 from src.dataset import load_and_process_data
-from tqdm import tqdm  # 导入 tqdm
+import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-def test_model_accuracy():
-    # 设置六个参数，这些参数可以根据不同的需求进行修改
-    MODEL_PATH = 'bert_text_classification_final.pth'  # 最佳模型的路径，保存了训练过程中表现最好的模型
-    BERT_PATH = 'model/bert-base-chinese'  # BERT 基础模型的路径，用于加载预训练的BERT模型和分词器
-    data_path = 'data/test_data.csv'  # 测试数据集的路径，需要是 CSV 格式
-    csv_map_str = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 标签与类别之间的映射，格式是字典的字符串表示
-    label_column = '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）'  # 标签列名，指示文本的类别
-    text_column = '热搜词条'  # 文本列名，包含我们要进行分类的文本内容
-    selection_method = "bottom"  # selection_method (str): 选择数据的方式，可选值为 "random"、"top"、"bottom"。
-    sample_size = 10
 
-    # 将 csv_map_str 字符串解析为字典
-    label_map = eval(csv_map_str)  # 将标签字符串转换为字典
+def load_model(model_path, num_labels):
+    """
+    加载预训练的BERT模型和分词器。
 
-    # 配置设备：判断是否有 GPU，如果有 GPU 使用 GPU，否则使用 CPU
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    Parameters:
+    - model_path (str): 模型文件的路径
+    - num_labels (int): 标签数量
 
-    # 加载预训练的 BERT 分词器
-    tokenizer = BertTokenizer.from_pretrained(BERT_PATH)
+    Returns:
+    - model: 加载的BERT模型
+    - tokenizer: 加载的BERT分词器
+    """
+    tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
+    model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=num_labels)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+    return model, tokenizer
 
-    # 加载和处理测试数据集
-    test_dataset, _, _ = load_and_process_data(
-        data_path=data_path,            # 数据路径
-        tokenizer=tokenizer,            # 分词器
-        label_column=label_column,      # 标签列
-        text_column=text_column,        # 文本列
-        label_map=label_map,            # 标签映射
-        sample_size=sample_size,               # 不进行采样，使用全部数据
-        test_size=None,                    # 将所有数据作为测试集
-        selection_method = selection_method
-    )
 
-    # 创建 DataLoader，用于批量加载数据集
-    test_loader = DataLoader(test_dataset, batch_size=8)
+def evaluate_model(model, test_loader, device, label_map):
+    """
+    详细评估模型在测试集上的表现。
 
-    # 加载 BERT 模型
-    model = BertForSequenceClassification.from_pretrained(BERT_PATH, num_labels=len(label_map), use_safetensors=False)  # 加载BERT模型
-    model.load_state_dict(torch.load(MODEL_PATH))  # 加载训练好的模型参数
-    model.to(device)  # 将模型移动到合适的设备（GPU/CPU）
+    Parameters:
+    - model: 待评估的模型
+    - test_loader (DataLoader): 测试数据集的 DataLoader
+    - device: 设备 (CPU or GPU)
+    - label_map (dict): 标签映射
 
-    # 开始测试模型性能
-    model.eval()  # 设置模型为评估模式
+    Returns:
+    - 评估指标字典
+    """
+    model.to(device)
+    all_preds = []
+    all_labels = []
+    total_loss = 0
+    total_samples = 0
 
-    # 使用 tqdm 包装 DataLoader 显示进度条
-    test_accuracy = 0.0
-    j = 0
-    with torch.no_grad():  # 不需要计算梯度
-        for batch in tqdm(test_loader, desc="Testing Model"):  # 使用 tqdm 显示进度条
-            inputs = batch['input_ids'].to(device)
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Evaluating", ncols=100):
+            input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             labels = batch['labels'].to(device)
 
-            # 获取对应文本
-            texts = [test_dataset.texts[j+i] for i in range(batch['input_ids'].size(0))]  # 从 Dataset 中获取文本
-            j = j+ batch['input_ids'].size(0)
-            # 模型预测
-            outputs = model(input_ids=inputs, attention_mask=attention_mask)  # 仅传递 input_ids 和 attention_mask
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+            loss = outputs.loss
+            logits = outputs.logits
 
-            logits = outputs.logits  # 获取预测的logits
+            total_loss += loss.item() * labels.size(0)
+            total_samples += labels.size(0)
 
-            # 计算准确率
             preds = torch.argmax(logits, dim=1)
-            correct_preds = (preds == labels).sum().item()
-            test_accuracy += correct_preds
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
 
-            # 打印每个文本及其预测结果
-            for i in range(len(texts)):
-                predicted_label = label_map[preds[i].item()]  # 将预测结果映射到标签
-                true_label = label_map[labels[i].item()]  # 将真实标签映射到标签
-                print(f"Text: {texts[i]}")
-                print(f"True Label: {true_label}, Predicted Label: {predicted_label}")
-                print("-" * 50)
+    # 计算指标
+    avg_loss = total_loss / total_samples
+    accuracy = np.mean(np.array(all_preds) == np.array(all_labels))
 
-    # 计算准确率
-    test_accuracy /= len(test_dataset)
+    # 生成分类报告
+    report = classification_report(
+        all_labels,
+        all_preds,
+        labels=list(label_map.keys()),  # 指定标签
+        target_names=list(label_map.values()),
+        digits=4
+    )
 
-    # 输出评估结果
-    print(f"Test Accuracy: {test_accuracy:.4f}")  # 打印测试准确率
+    # 生成混淆矩阵
+    cm = confusion_matrix(all_labels, all_preds)
+
+    return {
+        'avg_loss': avg_loss,
+        'accuracy': accuracy,
+        'classification_report': report,
+        'confusion_matrix': cm,
+        'predictions': all_preds,
+        'true_labels': all_labels
+    }
+
+
+def plot_confusion_matrix(cm, label_names, save_path):
+    """
+    绘制并保存混淆矩阵。
+
+    Parameters:
+    - cm (numpy.ndarray): 混淆矩阵
+    - label_names (list): 标签名称列表
+    - save_path (str): 保存路径
+    """
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=label_names,
+                yticklabels=label_names)
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+
+
+def test_model_performance(model_path=None):
+    """
+    测试模型性能的主函数。
+
+    Parameters:
+    - model_path (str, optional): 模型路径，默认为 None
+    """
+    # 如果没有提供模型路径，使用配置中的默认路径
+    if model_path is None:
+        model_path = os.path.join(config.ARTIFACTS_DIR, '20241115_214629', 'models', 'bert_epoch13_val_loss0.1352.pth')
+
+    # 解析标签映射
+    label_map = eval(config.CSV_MAP_STR)
+
+    # 配置设备
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # 加载模型和分词器
+    model, tokenizer = load_model(model_path, num_labels=len(label_map))
+
+    # 加载和处理测试数据集
+    test_dataset, _, _ = load_and_process_data(
+        data_path=config.TEST_DATA_PATH,  # 使用测试数据集路径
+        tokenizer=tokenizer,
+        label_column=config.LABEL_COLUMN,
+        text_column=config.TEXT_COLUMN,
+        csv_map_str=config.CSV_MAP_STR,
+        sample_size=None,  # 测试集通常使用全部数据
+        test_size=None
+    )
+
+    # 创建DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE)
+
+    # 评估模型
+    results = evaluate_model(model, test_loader, device, label_map)
+
+    # 打印基本指标
+    print(f"Average Loss: {results['avg_loss']:.4f}")
+    print(f"Test Accuracy: {results['accuracy']:.4f}")
+    print("\nClassification Report:\n", results['classification_report'])
+
+    # 根据配置决定是否绘制混淆矩阵
+    if config.EVALUATION_CONFIG['draw_confusion_matrix']:
+        plot_confusion_matrix(
+            results['confusion_matrix'],
+            list(label_map.values()),
+            os.path.join(config.ARTIFACTS_DIR, 'confusion_matrix.png')
+        )
+
+
+if __name__ == '__main__':
+    test_model_performance()
