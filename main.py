@@ -291,7 +291,7 @@ def main(config):
 
 if __name__ == '__main__':
     # 加载配置
-    # config_path = "./artifacts/20241115_210510/training_params.yaml"
+    # config_path = "./artifacts/20241115_212647/training_params.yaml"
     # config = load_config_from_yaml(config_path)
 
     # 启动主函数
