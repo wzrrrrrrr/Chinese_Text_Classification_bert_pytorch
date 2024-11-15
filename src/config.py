@@ -3,10 +3,12 @@ DATA_PATH = 'data/weibo-hot-search-labeled.csv'
 TEST_DATA_PATH = 'data/test_data.csv'  # 新增测试数据集路径
 LABEL_COLUMN = '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）'
 TEXT_COLUMN = '热搜词条'
-SAMPLE_SIZE = 30
+# SAMPLE_SIZE = 10
+SAMPLE_SIZE = None
 TEST_SIZE = 0.2
 SELECTION_METHOD = "random"
-CSV_MAP_STR = "{0: '科技', 1: '娱乐', 2: '时事'}"
+# CSV_MAP_STR = "{0: '科技', 1: '娱乐', 2: '时事'}"
+CSV_MAP_STR = None
 
 # 模型配置
 MODEL_PATH = 'bert-base-chinese'
