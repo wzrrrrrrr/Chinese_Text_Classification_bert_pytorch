@@ -21,41 +21,59 @@ plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 """
 
 
-def plot_loss_curve(train_losses, val_losses):
+
+def plot_loss_curve(train_losses, val_losses, save_path=None):
     """
-    绘制训练和验证损失曲线。
+    绘制训练和验证损失曲线，并可选择保存为图片。
 
     参数：
-    - train_losses (list): 训练集每轮的损失值
-    - val_losses (list): 验证集每轮的损失值
+    - train_losses (list): 训练集每轮的损失值。
+    - val_losses (list): 验证集每轮的损失值。
+    - save_path (str, optional): 保存图片的路径。如果为 None，则不保存图片。
     """
     plt.figure(figsize=(10, 5))
-    plt.plot(train_losses, label='Train Loss')
-    plt.plot(val_losses, label='Validation Loss')
+    plt.plot(train_losses, label='Train Loss', marker='o')
+    plt.plot(val_losses, label='Validation Loss', marker='s')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training and Validation Loss Curve')
     plt.legend()
     plt.grid(True)
+
+    # 如果提供了保存路径，则保存图片
+    if save_path:
+        plt.savefig(save_path, format='png', dpi=300, bbox_inches='tight')
+        print(f"损失曲线已保存至 {save_path}")
+
+    # 显示图形
     plt.show()
 
 
-def plot_accuracy_curve(train_accuracies, val_accuracies):
+
+def plot_accuracy_curve(train_accuracies, val_accuracies, save_path=None):
     """
-    绘制训练和验证准确率曲线。
+    绘制训练和验证准确率曲线，并可选择保存为图片。
 
     参数：
-    - train_accuracies (list of float): 每个 epoch 的训练准确率
-    - val_accuracies (list of float): 每个 epoch 的验证准确率
+    - train_accuracies (list of float): 每个 epoch 的训练准确率。
+    - val_accuracies (list of float): 每个 epoch 的验证准确率。
+    - save_path (str, optional): 保存图片的路径。如果为 None，则不保存图片。
     """
     plt.figure(figsize=(10, 5))
-    plt.plot(train_accuracies, label="Training Accuracy", color='blue')
-    plt.plot(val_accuracies, label="Validation Accuracy", color='orange')
+    plt.plot(train_accuracies, label="Training Accuracy", color='blue', marker='o')
+    plt.plot(val_accuracies, label="Validation Accuracy", color='orange', marker='s')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.title("Training and Validation Accuracy Curve")
     plt.legend()
-    plt.grid()
+    plt.grid(True)
+
+    # 如果提供了保存路径，则保存图片
+    if save_path:
+        plt.savefig(save_path, format='png', dpi=300, bbox_inches='tight')
+        print(f"准确率曲线已保存至 {save_path}")
+
+    # 显示图形
     plt.show()
 
 
@@ -133,20 +151,28 @@ def plot_confusion_matrix(model, data_loader, class_names_map, device='cpu', epo
     # 显示混淆矩阵
     plt.show()
 
-def plot_lr_curve(lr_list):
+def plot_lr_curve(lr_list, save_path=None):
     """
-    绘制学习率曲线。
+    绘制学习率曲线，并可选择保存为图片。
 
-    Args:
-        lr_list (list): 每个 epoch 结束时的学习率列表。
+    参数：
+    - lr_list (list): 每个 epoch 结束时的学习率列表。
+    - save_path (str, optional): 保存图片的路径。如果为 None，则不保存图片。
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(range(1, len(lr_list) + 1), lr_list, label='Learning Rate')
+    plt.plot(range(1, len(lr_list) + 1), lr_list, label='Learning Rate', color='green', marker='x')
     plt.xlabel('Epoch')
     plt.ylabel('Learning Rate')
     plt.title('Learning Rate Scheduler Curve')
     plt.legend()
     plt.grid(True)
+
+    # 如果提供了保存路径，则保存图片
+    if save_path:
+        plt.savefig(save_path, format='png', dpi=300, bbox_inches='tight')
+        print(f"学习率曲线已保存至 {save_path}")
+
+    # 显示图形
     plt.show()
 
 def plot_classification_report_epoch(y_true, y_pred, class_names, epoch=None, figsize=(10, 6)):
