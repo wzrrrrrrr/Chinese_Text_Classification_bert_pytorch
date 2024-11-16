@@ -77,14 +77,17 @@ def plot_confusion_matrix(cm, label_names, save_path):
     plt.savefig(save_path)
     plt.close()
 
+def test_model_performance():
+    config_paths = [
+        "./src/training_params.yaml",
+        "./artifacts/20241116_204746/training_params.yaml"
+    ]
+    best_model_path = "./artifacts/20241116_204746/models/bert_epoch2_val_loss0.4677.pth"
 
-@pytest.fixture
-def config():
-    config_path = "./src/training_params.yaml"  # 请根据实际路径调整
-    return load_config_from_yaml(config_path)
+    config_path = config_paths[1]
+    print(f"使用配置文件: {config_path}")
+    config = load_config_from_yaml(config_path)
 
-
-def test_model_performance(config, best_model_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
@@ -102,8 +105,7 @@ def test_model_performance(config, best_model_path):
     # Load the model with the specified path
     model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=len(label_map))
 
-    # Load the best model weights
-    best_model_path = best_model_path
+
     model.load_state_dict(torch.load(best_model_path, map_location=device))
 
     model.eval()  # Set the model to evaluation mode
@@ -130,21 +132,3 @@ def test_model_performance(config, best_model_path):
             list(label_map.values()),
             os.path.join(config.ARTIFACTS_DIR, confusion_matrix_filename)
         )
-
-
-if __name__ == '__main__':
-    config_paths = [
-        "./src/training_params.yaml",
-        "./artifacts/20241116_164034/training_params.yaml"
-    ]
-
-    config_path = config_paths[1]
-
-    if config_path:
-        print(f"使用配置文件: {config_path}")
-        config = load_config_from_yaml(config_path)
-    else:
-        print("未找到配置文件，请检查配置文件路径")
-        sys.exit(1)
-
-    test_model_performance(config, 'artifacts/20241116_164034/models/bert_epoch2_val_loss0.4751.pth')
