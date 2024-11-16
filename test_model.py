@@ -52,6 +52,9 @@ def evaluate_model(model, test_loader, device, label_map):
 
     cm = confusion_matrix(all_labels, all_preds)
 
+    # Add accuracy to the report
+    report += f"\nAccuracy: {accuracy:.4f}"
+
     return {
         'avg_loss': avg_loss,
         'accuracy': accuracy,
@@ -81,7 +84,7 @@ def config():
     return load_config_from_yaml(config_path)
 
 
-def test_model_performance(config):
+def test_model_performance(config, best_model_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
@@ -95,8 +98,16 @@ def test_model_performance(config):
         sample_size=None,
         test_size=None
     )
+
+    # Load the model with the specified path
     model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=len(label_map))
-    model.eval()
+
+    # Load the best model weights
+    best_model_path = best_model_path
+    model.load_state_dict(torch.load(best_model_path, map_location=device))
+
+    model.eval()  # Set the model to evaluation mode
+
     test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE)
 
     results = evaluate_model(model, test_loader, device, label_map)
@@ -124,7 +135,7 @@ def test_model_performance(config):
 if __name__ == '__main__':
     config_paths = [
         "./src/training_params.yaml",
-        "./artifacts/20241115_212647/training_params.yaml"
+        "./artifacts/20241116_164034/training_params.yaml"
     ]
 
     config_path = config_paths[1]
@@ -136,4 +147,4 @@ if __name__ == '__main__':
         print("未找到配置文件，请检查配置文件路径")
         sys.exit(1)
 
-    test_model_performance(config)
+    test_model_performance(config, 'artifacts/20241116_164034/models/bert_epoch2_val_loss0.4751.pth')

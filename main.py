@@ -123,20 +123,30 @@ def visualizations(visualizations_dir, train_losses, val_losses, train_accuracie
     plot_lr_curve(learning_rates, save_path=os.path.join(visualizations_dir, "lr_curve.png"))
 
 
-def save_training_params_yaml(config_module, current_training_dir):
+def convert_to_dict(obj):
+    if isinstance(obj, dict):
+        return {key: convert_to_dict(value) for key, value in obj.items()}
+    elif hasattr(obj, '__dict__'):
+        return convert_to_dict(vars(obj))
+    else:
+        return obj
+
+
+def save_training_params_yaml(config_dict, current_training_dir):
     """
     提取并保存训练参数为 YAML 格式。
 
     Parameters:
-    - config_module: 包含配置的模块对象
+    - config_dict: 包含配置的字典
     - current_training_dir: 当前训练目录，用于保存训练参数
     """
-    config_dict = {key: value for key, value in vars(config_module).items() if
-                   not key.startswith("__") and not callable(value)}
-
     params_file = os.path.join(current_training_dir, "training_params.yaml")
+
+    # 转换为普通字典
+    normal_dict = convert_to_dict(config_dict)
+
     with open(params_file, 'w', encoding='utf-8') as f:
-        yaml.dump(config_dict, f, allow_unicode=True, sort_keys=False)
+        yaml.dump(normal_dict, f, allow_unicode=True, sort_keys=False)
 
     print(f"训练参数已保存至 {params_file}！")
 
@@ -245,7 +255,7 @@ if __name__ == '__main__':
     # 配置文件路径列表
     config_paths = [
         "./src/training_params.yaml",
-        "./artifacts/20241115_212647/training_params.yaml"
+        "./artifacts/20241116_204153/training_params.yaml"
     ]
 
     config_path = config_paths[0]  # 默认使用第一个配置文件
