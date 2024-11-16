@@ -35,20 +35,6 @@ def create_training_directories(base_dir):
     return models_dir, visualizations_dir, current_training_dir
 
 
-# 加载分词器
-def load_tokenizer(model_path):
-    """
-    加载BERT分词器。
-
-    Parameters:
-    - model_path: BERT模型路径
-
-    Returns:
-    - tokenizer: BERT分词器
-    """
-    return BertTokenizer.from_pretrained(model_path)
-
-
 # 加载和处理数据集
 def load_datasets(tokenizer):
     """
@@ -72,20 +58,6 @@ def load_datasets(tokenizer):
         test_size=config.TEST_SIZE,
         selection_method=config.SELECTION_METHOD
     )
-
-
-# 初始化模型
-def initialize_model(num_labels):
-    """
-    初始化BERT模型。
-
-    Parameters:
-    - num_labels: 标签数量
-
-    Returns:
-    - model: 初始化的BERT模型
-    """
-    return BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=num_labels)
 
 def train_and_evaluate(model, train_loader, test_loader, optimizer, scheduler, device, models_dir, visualizations_dir,
                        label_map, config):
@@ -241,12 +213,12 @@ def main(config):
         )
 
         # Step 2: 加载分词器和数据集
-        tokenizer = load_tokenizer(config.MODEL_PATH)
+        tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
         train_dataset, test_dataset, label_map = load_datasets(tokenizer)
 
         # Step 3: 初始化模型
         num_labels = len(label_map)
-        model = initialize_model(num_labels)
+        model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=num_labels)
 
         # Step 4: 保存训练参数到 YAML 文件
         save_training_params_yaml(config, current_training_dir)
