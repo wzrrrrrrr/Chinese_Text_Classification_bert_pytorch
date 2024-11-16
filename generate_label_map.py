@@ -10,6 +10,7 @@ def generate_label_map(data_path, cls):
     return {idx: label for idx, label in enumerate(unique_labels)}
 
 
+
 if __name__ == "__main__":
     data_path = "data/weibo-hot-search-labeled.csv"  # 指定你的 CSV 文件路径
     label_map = generate_label_map(data_path, '标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）')

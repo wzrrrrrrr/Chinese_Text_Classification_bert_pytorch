@@ -6,6 +6,8 @@ TEST_DATA_PATH: data/test_data.csv             # 测试数据集的路径
 LABEL_COLUMN: 标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）  # 数据集中用于分类的标签列
 TEXT_COLUMN: 热搜词条                          # 数据集中用于训练的文本列
 
+BERT_FINAL_MODEL: bert_text_classification_final  # 最终的BERT模型
+
 # 数据集样本大小
 #SAMPLE_SIZE: null                               # 样本大小，设置为 null 表示使用整个数据集。可以设置为具体的数字来限制样本数量。
 SAMPLE_SIZE: 10                              # 如果需要从数据集中随机选择 10 个样本，可以解除注释并设置该值。

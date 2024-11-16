@@ -15,8 +15,6 @@ from main import load_config_from_yaml
 from src.dataset import load_and_process_data
 
 
-
-
 def evaluate_model(model, test_loader, device, label_map):
     model.to(device)
     all_preds = []
@@ -82,12 +80,11 @@ def config():
     config_path = "./src/training_params.yaml"  # 请根据实际路径调整
     return load_config_from_yaml(config_path)
 
+
 def test_model_performance(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
-
-
 
     test_dataset, _, label_map = load_and_process_data(
         data_path=config.TEST_DATA_PATH,
