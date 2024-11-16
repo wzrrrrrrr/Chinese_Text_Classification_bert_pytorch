@@ -163,6 +163,34 @@ def test_model_performance(model_path=None):
             os.path.join(config.ARTIFACTS_DIR, 'confusion_matrix.png')
         )
 
+def load_config_from_yaml(config_path):
+    """
+    从 YAML 文件加载配置，并返回配置对象。
+
+    Parameters:
+    - config_path (str): 配置文件路径
+
+    Returns:
+    - config (object): 包含配置内容的对象
+    """
+    # 读取 YAML 文件内容
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config_dict = yaml.safe_load(f)
+
+    return config_dict
+
 
 if __name__ == '__main__':
+    config_paths = [
+        "./src/training_params.yaml",
+        "./artifacts/20241116_022601/training_params.yaml"
+    ]
+    config_path = config_paths[1]
+    if config_path:
+        print(f"使用配置文件: {config_path}")
+        config = load_config_from_yaml(config_path)
+        main(config)
+    else:
+        print("未找到配置文件，请检查配置文件路径")
+        sys.exit(1)
     test_model_performance()

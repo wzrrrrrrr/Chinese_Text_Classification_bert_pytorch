@@ -2,11 +2,10 @@ import os
 
 from tqdm import tqdm
 import torch
-from src.visualization_utils import  plot_classification_report_epoch, plot_confusion_matrix_epoch
-from src.config import EVALUATION_CONFIG  # 导入配置
+from src.visualization_utils import plot_classification_report_epoch, plot_confusion_matrix_epoch
 
 
-def evaluate(model, test_loader, device, label_map, epoch=None, visualizations_dir=None):
+def evaluate(model, test_loader, device, label_map, config, epoch=None, visualizations_dir=None):
     """
     评估模型在测试集上的表现，返回平均损失和准确率，并根据需要绘制混淆矩阵和分类报告。
 
@@ -20,6 +19,7 @@ def evaluate(model, test_loader, device, label_map, epoch=None, visualizations_d
 
     Returns:
         tuple: (平均损失 (float), 准确率 (float))
+        :param config:
     """
     model.eval()
     total_loss = 0
@@ -59,13 +59,13 @@ def evaluate(model, test_loader, device, label_map, epoch=None, visualizations_d
         os.makedirs(classification_report_dir, exist_ok=True)
 
         # 绘制混淆矩阵并保存
-        if EVALUATION_CONFIG.get('draw_confusion_matrix'):
+        if config.get('draw_confusion_matrix'):
             class_names = [label_map[i] for i in range(len(label_map))]
             plot_confusion_matrix_epoch(all_labels, all_preds, class_names, epoch=epoch,
                                         visualizations_dir=confusion_matrix_dir)
 
         # 绘制分类报告并保存
-        if EVALUATION_CONFIG.get('draw_classification_report'):
+        if config.get('draw_classification_report'):
             class_names = [label_map[i] for i in range(len(label_map))]
             plot_classification_report_epoch(all_labels, all_preds, class_names, epoch=epoch,
                                              visualizations_dir=classification_report_dir)

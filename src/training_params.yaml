@@ -1,0 +1,42 @@
+# 数据集路径
+DATA_PATH: data/weibo-hot-search-labeled.csv  # 训练数据集的路径
+TEST_DATA_PATH: data/test_data.csv             # 测试数据集的路径
+
+# 数据集列名
+LABEL_COLUMN: 标签（时政、科技、科普、娱乐、体育、社会讨论/话题、时事、经济）  # 数据集中用于分类的标签列
+TEXT_COLUMN: 热搜词条                          # 数据集中用于训练的文本列
+
+# 数据集样本大小
+#SAMPLE_SIZE: null                               # 样本大小，设置为 null 表示使用整个数据集。可以设置为具体的数字来限制样本数量。
+SAMPLE_SIZE: 10                              # 如果需要从数据集中随机选择 10 个样本，可以解除注释并设置该值。
+
+# 测试集比例
+TEST_SIZE: 0.2                                  # 测试集占总数据集的比例，这里设置为 20%。
+
+# 数据选择方法
+SELECTION_METHOD: random                         # 数据选择的方法，这里选择随机选择样本。
+
+# CSV 映射字符串
+CSV_MAP_STR: null                               # CSV 映射字符串，用于将标签数字映射为具体的类别名称。可以设置为具体的映射格式。
+# CSV_MAP_STR = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 示例映射，可用于将数字标签转换为相应的类别名称。
+
+# 模型参数
+MODEL_PATH: bert-base-chinese                   # 使用的预训练模型名称，这里使用中文 BERT 模型。
+
+# 训练参数
+BATCH_SIZE: 8                                   # 每个训练批次的样本数量。
+NUM_EPOCHS: 50                                  # 模型训练的总轮数。
+LEARNING_RATE: 2.0e-05                          # 学习率，控制模型权重更新的步伐。
+PATIENCE: 3                                     # 提前停止的耐心值，如果验证集性能在连续 3 轮中没有改善，则停止训练。
+
+# 学习率调度器参数
+SCHEDULER_STEP_SIZE: 1                          # 学习率调度器的步长，在每个指定的步长后更新学习率。
+SCHEDULER_GAMMA: 0.9                            # 学习率衰减因子，每次更新学习率时乘以该因子。
+
+# 输出目录
+ARTIFACTS_DIR: artifacts                        # 模型和其他输出结果保存的目录。
+
+# 评估配置
+EVALUATION_CONFIG:                              # 评估过程中使用的配置选项
+  draw_confusion_matrix: true                   # 是否绘制混淆矩阵。
+  draw_classification_report: true               # 是否绘制分类报告。
