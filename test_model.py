@@ -77,14 +77,8 @@ def plot_confusion_matrix(cm, label_names, save_path):
     plt.savefig(save_path)
     plt.close()
 
-def test_model_performance():
-    config_paths = [
-        "./src/training_params.yaml",
-        "./artifacts/20241116_204746/training_params.yaml"
-    ]
-    best_model_path = "./artifacts/20241116_204746/models/bert_epoch2_val_loss0.4677.pth"
-
-    config_path = config_paths[1]
+def test_model_performance(config_path = "./artifacts/20241116_204746/training_params.yaml",
+                           best_model_path = "./artifacts/20241116_204746/models/bert_epoch2_val_loss0.4677.pth"):
     print(f"使用配置文件: {config_path}")
     config = load_config_from_yaml(config_path)
 
