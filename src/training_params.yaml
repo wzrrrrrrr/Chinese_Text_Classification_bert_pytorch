@@ -1,5 +1,5 @@
 # 数据集路径
-DATA_PATH: data/train_weibo-hot-search-labeled.csv  # 训练数据集的路径
+DATA_PATH: data/train_weibo-hot-search-labeled_augmented.csv  # 训练数据集的路径
 TEST_DATA_PATH: data/test_weibo-hot-search-labeled.csv           # 测试数据集的路径
 
 # 数据集列名
@@ -23,7 +23,9 @@ CSV_MAP_STR: null                               # CSV 映射字符串，用于�
 # CSV_MAP_STR = "{0: '科技', 1: '娱乐', 2: '时事'}"  # 示例映射，可用于将数字标签转换为相应的类别名称。
 
 # 模型参数
-MODEL_PATH: bert-base-chinese                   # 使用的预训练模型名称，这里使用中文 BERT 模型。
+MODEL_PATH: artifacts/20241116_204746/models/bert_epoch2_val_loss0.4677.pth                  # 使用的预训练模型名称，这里使用中文 BERT 模型。
+# 初始预训练模型
+PRETRAINED_MODEL: bert-base-chinese
 
 # 训练参数
 BATCH_SIZE: 8                                   # 每个训练批次的样本数量。

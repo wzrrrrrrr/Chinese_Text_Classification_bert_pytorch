@@ -191,7 +191,7 @@ def main(config):
     models_dir, visualizations_dir, current_training_dir = create_training_directories(base_dir=config.ARTIFACTS_DIR)
 
     # Step 2: 加载分词器和数据集
-    tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
+    tokenizer = BertTokenizer.from_pretrained(config.PRETRAINED_MODEL)
     train_dataset, test_dataset, label_map = load_and_process_data(
         data_path=config.DATA_PATH,
         tokenizer=tokenizer,
@@ -205,7 +205,8 @@ def main(config):
 
     # Step 3: 初始化模型
     num_labels = len(label_map)
-    model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=num_labels)
+    model = BertForSequenceClassification.from_pretrained(config.PRETRAINED_MODEL, num_labels=num_labels)
+
 
     # Step 4: 保存训练参数到 YAML 文件
     save_training_params_yaml(config, current_training_dir)
@@ -214,6 +215,14 @@ def main(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"使用设备: {device}")
     model.to(device)
+
+    # 加载预训练权重
+    state_dict = torch.load(config.MODEL_PATH, map_location=device, weights_only=True)
+    # 处理不同的状态字典格式
+    if 'model_state_dict' in state_dict:
+        model.load_state_dict(state_dict['model_state_dict'])
+    else:
+        model.load_state_dict(state_dict)
 
     # Step 6: 定义数据加载器
     train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
@@ -255,10 +264,10 @@ if __name__ == '__main__':
     # 配置文件路径列表
     config_paths = [
         "./src/training_params.yaml",
-        "./artifacts/20241116_204153/training_params.yaml"
+        "./artifacts/20241116_204746/training_params.yaml"
     ]
 
-    config_path = config_paths[0]  # 默认使用第一个配置文件
+    config_path = config_paths[1]  # 默认使用第一个配置文件
 
     if config_path:
         print(f"使用配置文件: {config_path}")

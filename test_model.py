@@ -77,14 +77,14 @@ def plot_confusion_matrix(cm, label_names, save_path):
     plt.savefig(save_path)
     plt.close()
 
-def test_model_performance(config_path = "./artifacts/20241116_204746/training_params.yaml",
-                           best_model_path = "./artifacts/20241116_204746/models/bert_epoch2_val_loss0.4677.pth"):
+def test_model_performance(config_path = "./artifacts/20241119_142350/training_params.yaml",
+                           best_model_path = "./artifacts/20241119_142350/models/bert_epoch1_val_loss0.6175.pth"):
     print(f"使用配置文件: {config_path}")
     config = load_config_from_yaml(config_path)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    tokenizer = BertTokenizer.from_pretrained(config.MODEL_PATH)
+    tokenizer = BertTokenizer.from_pretrained(config.PRETRAINED_MODEL)
 
     test_dataset, _, label_map = load_and_process_data(
         data_path=config.TEST_DATA_PATH,
@@ -97,7 +97,7 @@ def test_model_performance(config_path = "./artifacts/20241116_204746/training_p
     )
 
     # Load the model with the specified path
-    model = BertForSequenceClassification.from_pretrained(config.MODEL_PATH, num_labels=len(label_map))
+    model = BertForSequenceClassification.from_pretrained(config.PRETRAINED_MODEL, num_labels=len(label_map))
 
 
     model.load_state_dict(torch.load(best_model_path, map_location=device))
